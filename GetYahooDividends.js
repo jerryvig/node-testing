@@ -7,14 +7,11 @@ var oneYearAgo = new Date();
 oneYearAgo.setFullYear(today.getFullYear()-1);
 var oneYearAgoISO = oneYearAgo.toISOString().substr(0,10);
 
-//var rows = new Array();
-
 function pushRows(ticker,respBody) {
   var lines =  respBody.split('\n');
   var row = new Object();
   row.ticker = ticker;
   row.ttmd = 0.0;
-  console.log('INITIALIZED');
   
   async.each(lines.slice(1,lines.length-1), function(line,callback){
       var vals = line.split(',');
@@ -58,7 +55,6 @@ function getYahooLast(ticker,callback){
 		});
 		resp.on('end',function(){
 		  var cols = respBody.split(',');
-		  console.log('COLS1 = '+cols[1]);
 		  callback(null,cols[1].trim());
 		});
 	}).on('error',function(e){
@@ -74,10 +70,13 @@ function getYahoos(ticker,cb){
 				    	var results = getYahooLast(ticker,callback);
 				    }],
 					function(err,results) {
-						console.log('Ticker = '+ticker+' done.');
-						//console.log(results);
+						var record = new Object();
+						record.ticker = results[0].ticker;
+						record.ttmd = results[0].ttmd;
+						record.last = results[1];
+						record.divYield = results[0].ttmd/results[1]; 
 						
-						console.log( results[0].ticker+', YIELD = '+results[0].ttmd/results[1] );
+						console.log( record );
 					});
 	cb();
 }
