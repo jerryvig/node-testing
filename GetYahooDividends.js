@@ -82,14 +82,10 @@ function getYahoos(ticker,cb){
 	cb();
 }
 
-//var tickers = new Array('rem','kbwd','hyld','dwx','jnk','hyg','amj','amlp','pcef','pgf','pgx','pff');
-//var tickers = ['nly','agnc','bpt','etp','cim'];
-
 function main() {
 	fs.readFile('./tickerList.json','utf8',function(err,data){
 		var tickerList = JSON.parse(data);
-		async.each( tickerList.tickers, getYahoos, function(){
-		});
+		async.each( tickerList.tickers, getYahoos, function(){});
 	});
 }
 
