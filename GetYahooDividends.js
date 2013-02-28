@@ -82,26 +82,34 @@ function getYahoos(ticker,cb){
 	cb();
 }
 
-
-
 function main() {
 	fs.readFile('./tickerList.json','utf8',function(err,data){
-		var tickerList = JSON.parse(data);
+		//var tickerList = JSON.parse(data);
+                var tickerList = new Object();
+                tickerList.tickers = new Array('bpt','nly','t','vz','etp','epd','kmp'); 
+
 		//async.each( tickerList.tickers, getYahoos, function(){
 		  //This is where the sorting of the records will go.
 		//});
 		var i=0;
-		function doCall(){
+		function doCall(callback){
 			console.log('DOING TICKER = '+tickerList.tickers[i]);
 			getYahoos(tickerList.tickers[i],function(){
 				i++;
 				if (i<tickerList.tickers.length) {
-					setTimeout(doCall,1500);
+				    setTimeout(function(){
+                                        doCall(callback);
+                                    },1500);
 				}
+			    else {
+			    	setTimeout(callback,1500);  
+                }
 			});
 		}
 		
-		doCall();
+		doCall(function(){
+	           console.log('doCall() done');
+                });
 	});
 }
 
