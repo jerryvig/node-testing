@@ -82,10 +82,26 @@ function getYahoos(ticker,cb){
 	cb();
 }
 
+
+
 function main() {
 	fs.readFile('./tickerList.json','utf8',function(err,data){
 		var tickerList = JSON.parse(data);
-		async.each( tickerList.tickers, getYahoos, function(){});
+		//async.each( tickerList.tickers, getYahoos, function(){
+		  //This is where the sorting of the records will go.
+		//});
+		var i=0;
+		function doCall(){
+			console.log('DOING TICKER = '+tickerList.tickers[i]);
+			getYahoos(tickerList.tickers[i],function(){
+				i++;
+				if (i<tickerList.tickers.length) {
+					setTimeout(doCall,1500);
+				}
+			});
+		}
+		
+		doCall();
 	});
 }
 
