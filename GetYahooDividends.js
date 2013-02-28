@@ -1,6 +1,7 @@
 var http = require('http');
 var events = require('events');
 var async = require('async');
+var fs = require('fs');
 
 var today = new Date();
 var oneYearAgo = new Date();
@@ -74,7 +75,7 @@ function getYahoos(ticker,cb){
 						record.ticker = results[0].ticker;
 						record.ttmd = results[0].ttmd;
 						record.last = results[1];
-						record.divYield = results[0].ttmd/results[1]; 
+						record.yield = results[0].ttmd/results[1]; 
 						
 						console.log( record );
 					});
@@ -82,9 +83,14 @@ function getYahoos(ticker,cb){
 }
 
 //var tickers = new Array('rem','kbwd','hyld','dwx','jnk','hyg','amj','amlp','pcef','pgf','pgx','pff');
-var tickers = ['nly','agnc','bpt'];
+//var tickers = ['nly','agnc','bpt','etp','cim'];
 
-async.each( tickers, getYahoos, function(){
-    //rows.sort( function(a,b){ return b.ttmd - a.ttmd; } );
-    //console.log( rows );
-});
+function main() {
+	fs.readFile('./tickerList.json','utf8',function(err,data){
+		var tickerList = JSON.parse(data);
+		async.each( tickerList.tickers, getYahoos, function(){
+		});
+	});
+}
+
+main();
