@@ -88,9 +88,12 @@ function main() {
                 var tickerList = new Object();
                 tickerList.tickers = new Array('bpt','nly','t','vz','etp','epd','kmp'); 
 
+        // This code is for process the tickers asynchronously.
 		//async.each( tickerList.tickers, getYahoos, function(){
 		  //This is where the sorting of the records will go.
 		//});
+		
+		var SLEEP_BETWEEN_REQUESTS = 1000;
 		var i=0;
 		function doCall(callback){
 			console.log('DOING TICKER = '+tickerList.tickers[i]);
@@ -99,10 +102,10 @@ function main() {
 				if (i<tickerList.tickers.length) {
 				    setTimeout(function(){
                                         doCall(callback);
-                                    },1500);
+                                    },SLEEP_BETWEEN_REQUESTS);
 				}
 			    else {
-			    	setTimeout(callback,1500);  
+			    	setTimeout(callback,SLEEP_BETWEEN_REQUESTS);  
                 }
 			});
 		}
