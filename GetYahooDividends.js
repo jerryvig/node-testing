@@ -78,42 +78,50 @@ function getYahoos(ticker,cb){
 						record.yield = results[0].ttmd/results[1]; 
 						
 						console.log( record );
+						fs.appendFile('./dividendYieldRecords.json',(JSON.stringify(record)+','),'utf8',cb);
 					});
-	cb();
+	//cb();
 }
 
 function main() {
-	fs.readFile('./tickerList.json','utf8',function(err,data){
-		//var tickerList = JSON.parse(data);
-                var tickerList = new Object();
-                tickerList.tickers = new Array('bpt','nly','t','vz','etp','epd','kmp'); 
+	fs.unlink('./dividendYieldRecords.json',function(){
+	 fs.appendFile('./dividendYieldRecords.json','{"records":[','utf8',function(){
+	 	fs.readFile('./tickerList.json','utf8',function(err,data){
+		   	//var tickerList = JSON.parse(data);
+          	var tickerList = new Object();
+            tickerList.tickers = new Array('bpt','nly','t','tef','agnc','jnk'); 
 
         // This code is for process the tickers asynchronously.
 		//async.each( tickerList.tickers, getYahoos, function(){
 		  //This is where the sorting of the records will go.
 		//});
 		
-		var SLEEP_BETWEEN_REQUESTS = 1000;
-		var i=0;
-		function doCall(callback){
-			console.log('DOING TICKER = '+tickerList.tickers[i]);
-			getYahoos(tickerList.tickers[i],function(){
-				i++;
-				if (i<tickerList.tickers.length) {
-				    setTimeout(function(){
+			var SLEEP_BETWEEN_REQUESTS = 1000;
+			var i=0;
+			function doCall(callback){
+				console.log('DOING TICKER = '+tickerList.tickers[i]);
+				getYahoos(tickerList.tickers[i],
+				function(){
+					i++;
+					if (i<tickerList.tickers.length) {
+				    	setTimeout(function(){
                                         doCall(callback);
                                     },SLEEP_BETWEEN_REQUESTS);
-				}
-			    else {
-			    	setTimeout(callback,SLEEP_BETWEEN_REQUESTS);  
-                }
-			});
+					}
+			    	else {
+			    		setTimeout(callback,SLEEP_BETWEEN_REQUESTS);  
+                	}
+				});
 		}
 		
 		doCall(function(){
-	           console.log('doCall() done');
-                });
+				fs.appendFile('./dividendYieldRecords.json',']}','utf8',function(){
+	           			console.log('doCall() done');
+	            });
+        });
+	  });
 	});
+   });
 }
 
 main();
