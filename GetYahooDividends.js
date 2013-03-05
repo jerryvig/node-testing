@@ -87,9 +87,9 @@ function main() {
 	fs.unlink('./dividendYieldRecords.json',function(){
 	 fs.appendFile('./dividendYieldRecords.json','{"records":[','utf8',function(){
 	 	fs.readFile('./tickerList.json','utf8',function(err,data){
-		   	//var tickerList = JSON.parse(data);
-          	var tickerList = new Object();
-            tickerList.tickers = new Array('bpt','nly','t','tef','agnc','jnk'); 
+		   	var tickerList = JSON.parse(data);
+          	//var tickerList = new Object();
+            //tickerList.tickers = new Array('bpt','nly','t','tef','agnc','jnk'); 
 
         // This code is for process the tickers asynchronously.
 		//async.each( tickerList.tickers, getYahoos, function(){
@@ -124,4 +124,18 @@ function main() {
    });
 }
 
-main();
+function sortRecords() {
+	fs.readFile('./dividendYieldRecords.json','utf8',function(err,data){
+		var yieldRecords = JSON.parse(data);
+		async.sortBy(yieldRecords.records,function(item,callback){
+			callback(err,item.yield);
+		}, function(err,results){
+			fs.appendFile('./sortedYieldRecords.json',JSON.stringify(results),'utf8',function(){
+		    	console.log('Wrote sorted file.');
+		    });	
+		});
+    });
+}
+
+//main();
+sortRecords();
