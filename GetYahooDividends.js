@@ -19,6 +19,7 @@ var events = require('events');
 var async = require('async');
 var fs = require('fs');
 
+//namespace declarations.
 var com = {};
 com.mktneutral = {};
 
