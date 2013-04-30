@@ -218,11 +218,26 @@ mktneutral.GetYahooDividends.prototype.sortRecords = function(jsonDividendYieldR
     });
 };
 
+/**
+ * Function to filter and print the sorted records that you are interested in.
+ * 
+ * @param  jsonSortedRecords  Input file containing the dividend records in JSON format.
+ * 
+ */
 mktneutral.GetYahooDividends.prototype.printSortedRecords = function(jsonSortedRecords) {
-	
-}
+	fs.readFile(jsonSortedRecords,'utf8',function(err,data){
+		var records = JSON.parse(data);
+		async.each(records,function(rec){
+			if ( rec.yield > 0.06 && rec.yield < 0.23 ) {
+				console.log(rec.ticker + ', ' + rec.yield);
+			}
+		},function(err){
+		});
+	});
+};
 
 //Main execution code goes here.
 var getYahooDividends = new mktneutral.GetYahooDividends();
 //getYahooDividends.main('./tickerList.json','./dividendYieldRecords.json');
-getYahooDividends.sortRecords('./dividendYieldRecords.json','./sortedYieldRecords.json');
+//getYahooDividends.sortRecords('./dividendYieldRecords.json','./sortedYieldRecords.json');
+getYahooDividends.printSortedRecords('./sortedYieldRecords.json');
