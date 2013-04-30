@@ -74,9 +74,15 @@ mktneutral.GetYahooDividends.prototype.getYahooHistory = function(ticker,callbac
   				'&g=v&ignore=.csv';
  
  xhrII.onreadystatechange = function(){
-	 if (xhrII.readyState==4 && xhrII.status==200){
-		 var row = self.pushRows(ticker,xhrII.responseText.toString());
-		 callback(null,row);
+	 if (xhrII.readyState==4){
+		 if (xhrII.status==200){
+			 var row = self.pushRows(ticker,xhrII.responseText.toString());
+			 callback(null,row);
+		 }
+		 else {
+			 console.log('Error processing ticker'+ticker);
+			 callback(null,null);
+		 }
 	 }
  };
  
@@ -97,9 +103,15 @@ mktneutral.GetYahooDividends.prototype.getYahooLast = function(ticker,callback){
 	console.log( "Ticker = " + ticker );
 	
 	xhr.onreadystatechange = function(){
-		if (xhr.readyState==4 && xhr.status==200){
-			var cols = xhr.responseText.split(',');
-			callback(null,cols[1].trim());
+		if ( xhr.readyState==4 ){
+			if ( xhr.status==200 ){
+				var cols = xhr.responseText.split(',');
+				callback(null,cols[1].trim());
+			}
+			else {
+				console.log('Error processing ticker'+ticker);
+				callback(null,0.0);
+			}
 		}
 	};
 	
@@ -126,14 +138,21 @@ mktneutral.GetYahooDividends.prototype.getYahoos = function(ticker,outputJSONRec
 				    }],
 					function(err,results) {
 						var record = new Object();
-						record.ticker = results[0].ticker;
-						record.ttmd = results[0].ttmd;
-						record.last = results[1];
-						record.yield = results[0].ttmd/results[1]; 
+						//We need try/catch here because sometimes we get HTTP error responses.
+						try {
+							record.ticker = results[0].ticker;
+							record.ttmd = results[0].ttmd;
+							record.last = results[1];
+							record.yield = results[0].ttmd/results[1]; 
 						
-						console.log( record );
-						fs.appendFile(outputJSONRecordsFile,(JSON.stringify(record)+','),'utf8',cb);
-					});
+							console.log( record );
+							fs.appendFile(outputJSONRecordsFile,(JSON.stringify(record)+','),'utf8',cb);
+						}
+						catch ( err ) {
+							console.log(err.message);
+							cb();
+						}
+	});
 };
 
 /**
@@ -199,7 +218,11 @@ mktneutral.GetYahooDividends.prototype.sortRecords = function(jsonDividendYieldR
     });
 };
 
+mktneutral.GetYahooDividends.prototype.printSortedRecords = function(jsonSortedRecords) {
+	
+}
+
 //Main execution code goes here.
 var getYahooDividends = new mktneutral.GetYahooDividends();
-getYahooDividends.main('./tickerList.json','./dividendYieldRecords.json');
-//getYahooDividends.sortRecords('./dividendYieldRecords.json','./sortedYieldRecords.json');
+//getYahooDividends.main('./tickerList.json','./dividendYieldRecords.json');
+getYahooDividends.sortRecords('./dividendYieldRecords.json','./sortedYieldRecords.json');
