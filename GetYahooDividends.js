@@ -12,6 +12,7 @@
 var async = require('async');
 var XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
 var fs = require('fs');
+var sqlite3 = require('sqlite3').verbose();
 
 //XMLHttpRequest objects
 var xhr = new XMLHttpRequest();
@@ -338,18 +339,52 @@ mktneutral.GetYahooDividends.prototype.getYahooMainPage = function(ticker,jsonRe
 };
 
 /**
- * Method to combine the records from the other text files into a database file.
+ * Method to insert the Yahoo profiles data into the sqlite database.
  *
  */
-mktneutral.GetYahooDividends.prototype.combineRecords = function(ticker,jsonRecordsFile,callback) {
-    
+mktneutral.GetYahooDividends.prototype.insertYahooProfiles = function() {
+    var db = new sqlite3.Database('YahooDividends.db',function(){
+        db.run('DROP TABLE IF EXISTS yahoo_profiles',function(){
+	 db.run('CREATE TABLE IF NOT EXISTS yahoo_profiles ( ticker TEXT, index_membership TEXT, sector TEXT, industry TEXT, fte TEXT )',function(){
+           fs.readFile('./YahooProfileRecords.json','utf8',function(err,data){
+	       var profileRecords = JSON.parse(data);
+               console.log( 'RECORDS COUNT = ' + profileRecords.records.length );
+               async.each(profileRecords.records,function(rec){
+		   db.run('INSERT INTO yahoo_profiles VALUES ( "' + rec.ticker + '", "' + rec.indexMembership + '", "' + rec.sector + '", "' + rec.industry + '", "' + rec.fte + '" )',function(){});
+               },function(){
+		   db.close();
+               });
+           });
+         });
+      });
+    });
 };
 
-
+/**
+ * Method to insert the Yahoo main page data into the sqlite database.
+ *
+ */
+mktneutral.GetYahooDividends.prototype.insertYahooMainPages = function() {
+    var db = new sqlite3.Database('YahooDividends.db',function(){
+       db.run('DROP TABLE IF EXISTS yahoo_main_pages',function(){
+	  db.run('CREATE TABLE IF NOT EXISTS yahoo_main_pages ( ticker TEXT, name TEXT, market_cap TEXT, pe_ratio TEXT, eps TEXT )',function(){
+	      fs.readFile('./YahooMainPageRecords.json','utf8',function(err,data){
+                 var mainPageRecords = JSON.parse(data);
+                 async.each(mainPageRecords.records,function(rec){
+                     db.run('INSERT INTO yahoo_main_pages VALUES ( "' + rec.ticker + '", "' + rec.name + '", "' + rec.marketCap + '", "' + rec.peRatio + '", "' + rec.eps + '" )',function(){});
+                     },function(){
+	               db.close();
+                 });
+              });
+          });
+       });
+    });
+};
 
 //Main execution code goes here to instantiate the object and run.
 var getYahooDividends = new mktneutral.GetYahooDividends();
-getYahooDividends.main('./tickerList.json','./YahooMainPageRecords.json');
+//getYahooDividends.main('./tickerList.json','./YahooMainPageRecords.json');
+getYahooDividends.insertYahooMainPages();
 
 //getYahooDividends.sortRecords('./dividendYieldRecords.json','./sortedYieldRecords.json');
 //getYahooDividends.printSortedRecords('./sortedYieldRecords.json');
