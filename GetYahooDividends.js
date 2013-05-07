@@ -12,7 +12,6 @@
 var async = require('async');
 var XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
 var fs = require('fs');
-var jsdom = require('jsdom');
 
 //XMLHttpRequest objects
 var xhr = new XMLHttpRequest();
@@ -337,6 +336,16 @@ mktneutral.GetYahooDividends.prototype.getYahooMainPage = function(ticker,jsonRe
     xhr.open('GET',prefix+ticker,true);
     xhr.send();
 };
+
+/**
+ * Method to combine the records from the other text files into a database file.
+ *
+ */
+mktneutral.GetYahooDividends.prototype.combineRecords = function(ticker,jsonRecordsFile,callback) {
+    
+};
+
+
 
 //Main execution code goes here to instantiate the object and run.
 var getYahooDividends = new mktneutral.GetYahooDividends();
