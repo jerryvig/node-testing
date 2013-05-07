@@ -297,7 +297,6 @@ mktneutral.GetYahooDividends.prototype.getYahooMainPage = function(ticker,jsonRe
 	if ( xhr.readyState==4 ){
 	    if ( xhr.status==200 ){
 		var responseText = xhr.responseText.replace(/<(?:.|\n)*?>/gm, '');
-		//console.log( responseText );
 
 		var marketsClosedIdx = responseText.indexOf('Markets closed');
                 var marketCapIdx = responseText.indexOf('Market Cap:');
@@ -342,6 +341,7 @@ mktneutral.GetYahooDividends.prototype.getYahooMainPage = function(ticker,jsonRe
 //Main execution code goes here to instantiate the object and run.
 var getYahooDividends = new mktneutral.GetYahooDividends();
 getYahooDividends.main('./tickerList.json','./YahooMainPageRecords.json');
+
 //getYahooDividends.sortRecords('./dividendYieldRecords.json','./sortedYieldRecords.json');
 //getYahooDividends.printSortedRecords('./sortedYieldRecords.json');
 //var tickersArray = new Array('aapl','xom','wmt','msft','csco','cop','cvx','wag','cmcsa','goog','lnkd');
