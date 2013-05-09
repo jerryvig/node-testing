@@ -418,8 +418,8 @@ mktneutral.GetYahooDividends.prototype.insertSortedYieldRecords = function() {
 //Main execution code goes here to instantiate the object and run.
 var getYahooDividends = new mktneutral.GetYahooDividends();
 //getYahooDividends.main('./tickerList.json','./YahooMainPageRecords.json');
-//getYahooDividends.insertYahooMainPages();
-getYahooDividends.insertSortedYieldRecords();
+getYahooDividends.insertYahooProfiles();
+//getYahooDividends.insertSortedYieldRecords();
 
 //getYahooDividends.sortRecords('./dividendYieldRecords.json','./sortedYieldRecords.json');
 //getYahooDividends.printSortedRecords('./sortedYieldRecords.json');
