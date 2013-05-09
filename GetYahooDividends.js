@@ -304,18 +304,30 @@ mktneutral.GetYahooDividends.prototype.getYahooMainPage = function(ticker,jsonRe
                 var epsIdx = responseText.indexOf('EPS (ttm):');
 		var oneDayIdx = responseText.indexOf('1 Day');
 
-		var tickerAndName = responseText.substr(marketsClosedIdx+14,50);
-		tickerAndName = tickerAndName.substr(0,tickerAndName.indexOf('('));
-		tickerAndName = tickerAndName.replace(ticker,'');
+		var tickerAndName = '';
+                if ( marketsClosedIdx > 0 ) {
+                    tickerAndName = responseText.substr(marketsClosedIdx+14,50);
+		    tickerAndName = tickerAndName.substr(0,tickerAndName.indexOf('('));
+		    tickerAndName = tickerAndName.replace(ticker,'');
+                }
 
-		var marketCap = responseText.substr(marketCapIdx+11,(peIdx-(marketCapIdx+11)));
-		marketCap = marketCap.trim().replace('(','').replace(')','');
-                
-		var peRatio =  responseText.substr(peIdx+11,(epsIdx-(peIdx+11)));
-		peRatio = peRatio.trim().replace('(','').replace(')','');
-           
-		var eps = responseText.substr(epsIdx+11,(oneDayIdx-epsIdx-11));
-                eps = eps.trim().replace(')','').replace('(','');
+		var marketCap = '';
+                if ( marketCapIdx > 0 && peIdx > 0 ) {
+                    marketCap = responseText.substr(marketCapIdx+11,(peIdx-(marketCapIdx+11)));
+		    marketCap = marketCap.trim().replace('(','').replace(')','');
+                }
+
+		var peRatio = '';
+                if ( peIdx > 0 && epsIdx > 0 ) {
+                    responseText.substr(peIdx+11,(epsIdx-(peIdx+11)));
+		    peRatio = peRatio.trim().replace('(','').replace(')','');
+                }           
+
+                var eps = '';
+                if ( epsIdx > 0 && oneDayIdx > 0 ) {
+		    eps = responseText.substr(epsIdx+11,(oneDayIdx-epsIdx-11));
+                    eps = eps.trim().replace(')','').replace('(','');
+                }
 
 		var record = new Object();
 		record.ticker = ticker;
@@ -366,7 +378,7 @@ mktneutral.GetYahooDividends.prototype.insertYahooProfiles = function() {
  */
 mktneutral.GetYahooDividends.prototype.insertYahooMainPages = function() {
     var db = new sqlite3.Database('YahooDividends.db',function(){
-       db.run('DROP TABLE IF EXISTS yahoo_main_pages',function(){
+      db.run('DROP TABLE IF EXISTS yahoo_main_pages',function(){
 	  db.run('CREATE TABLE IF NOT EXISTS yahoo_main_pages ( ticker TEXT, name TEXT, market_cap TEXT, pe_ratio TEXT, eps TEXT )',function(){
 	      fs.readFile('./YahooMainPageRecords.json','utf8',function(err,data){
                  var mainPageRecords = JSON.parse(data);
@@ -381,15 +393,38 @@ mktneutral.GetYahooDividends.prototype.insertYahooMainPages = function() {
     });
 };
 
+/**
+ * Method to insert the sorted dividend yield records.
+ *
+ */
+mktneutral.GetYahooDividends.prototype.insertSortedYieldRecords = function() {
+    var db = new sqlite3.Database('YahooDividends.db',function(){
+    	db.run('DROP TABLE IF EXISTS sorted_yield_records',function(){
+            db.run('CREATE TABLE sorted_yield_records ( ticker TEXT, ttmd REAL, last REAL, yield REAL )',function(){
+		fs.readFile('./sortedYieldRecords.json','utf8',function(err,data){
+                  var sortedYieldRecords = JSON.parse(data);
+                  async.each(sortedYieldRecords.records,function(rec){
+	              db.run('INSERT INTO sorted_yield_records VALUES ( "' + rec.ticker + '", "' + rec.ttmd + '", "' + rec.last + '", "' + rec.yield + '" )',function(){});
+                    // console.log( rec.ticker );
+                  },function(){
+	               db.close();
+                  });
+		 });
+            });
+    	});
+    }); 
+};
+
 //Main execution code goes here to instantiate the object and run.
 var getYahooDividends = new mktneutral.GetYahooDividends();
 //getYahooDividends.main('./tickerList.json','./YahooMainPageRecords.json');
-getYahooDividends.insertYahooMainPages();
+//getYahooDividends.insertYahooMainPages();
+getYahooDividends.insertSortedYieldRecords();
 
 //getYahooDividends.sortRecords('./dividendYieldRecords.json','./sortedYieldRecords.json');
 //getYahooDividends.printSortedRecords('./sortedYieldRecords.json');
 //var tickersArray = new Array('aapl','xom','wmt','msft','csco','cop','cvx','wag','cmcsa','goog','lnkd');
-
+//var tickersArray = new Array('aait');
 //async.each(tickersArray,function(ticker){
-  // getYahooDividends.getYahooMainPage(ticker,'./YahooMainPageRecords.json',function(){});
+//   getYahooDividends.getYahooMainPage(ticker,'./YahooMainPageRecords.json',function(){});
 //},function(){});
