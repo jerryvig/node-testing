@@ -28,6 +28,12 @@ var mktneutral = {};
  * 
  */
 mktneutral.GetYahooDividends = function() {
+	/**
+	 * Constant:
+	 *   Number of years of dividend history to collect from yahoo.
+	 */
+	this.HISTORICAL_YEARS = 5;
+	
 	this.today = new Date();
 	this.oneYearAgo = new Date();
 	this.oneYearAgo.setFullYear(this.today.getFullYear()-1);
@@ -70,7 +76,7 @@ mktneutral.GetYahooDividends.prototype.pushRows = function(ticker,respBody) {
 mktneutral.GetYahooDividends.prototype.getYahooHistory = function(ticker,callback) {
  var self = this;
  var prefix = 'http://ichart.finance.yahoo.com/table.csv?s=';
- var suffix = '&a='+this.today.getMonth()+'&b='+this.today.getDate()+'&c='+(this.today.getFullYear()-1) +
+ var suffix = '&a='+this.today.getMonth()+'&b='+this.today.getDate()+'&c='+(this.today.getFullYear()-this.HISTORICAL_YEARS) +
   				'&d='+this.today.getMonth()+'&e='+this.today.getDate()+'&f='+this.today.getFullYear()+
   				'&g=v&ignore=.csv';
  
@@ -418,8 +424,8 @@ mktneutral.GetYahooDividends.prototype.insertSortedYieldRecords = function() {
 //Main execution code goes here to instantiate the object and run.
 var getYahooDividends = new mktneutral.GetYahooDividends();
 //getYahooDividends.main('./tickerList.json','./YahooMainPageRecords.json');
-//getYahooDividends.insertYahooMainPages();
-getYahooDividends.insertSortedYieldRecords();
+getYahooDividends.insertYahooProfiles();
+//getYahooDividends.insertSortedYieldRecords();
 
 //getYahooDividends.sortRecords('./dividendYieldRecords.json','./sortedYieldRecords.json');
 //getYahooDividends.printSortedRecords('./sortedYieldRecords.json');
