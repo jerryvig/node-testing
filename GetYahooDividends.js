@@ -10,7 +10,7 @@
 
 //Requires will go here.
 var async = require('async');
-var XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
+var XMLHttpRequest = require('xmlhttprequest').XMLHttpRequest;
 var fs = require('fs');
 var sqlite3 = require('sqlite3').verbose();
 
@@ -18,8 +18,9 @@ var sqlite3 = require('sqlite3').verbose();
 var xhr = new XMLHttpRequest();
 var xhrII = new XMLHttpRequest();
 
-//namespace declarations.
-var mktneutral = {};
+//Namespace declarations.
+var mktneutral = mktneutral || {};
+mktneutral.dividends = mktneutral.dividends || {};
 
 /**
  * Create a new GetYahooDividends object.
@@ -27,7 +28,7 @@ var mktneutral = {};
  * @constructor
  * 
  */
-mktneutral.GetYahooDividends = function() {
+mktneutral.dividends.GetYahooDividends = function() {
 	/**
 	 * Constant:
 	 *   Number of years of dividend history to collect from yahoo.
@@ -46,8 +47,9 @@ mktneutral.GetYahooDividends = function() {
  * @param ticker   The ticker symbol for the rows to be added.
  * @param respBody  The text of the HTTP response body to be split into rows.
  * 
+ * @author Jerry Vigil
  */
-mktneutral.GetYahooDividends.prototype.pushRows = function(ticker,respBody) {
+mktneutral.dividends.GetYahooDividends.prototype.pushRows = function(ticker,respBody) {
   var self = this;
   var lines =  respBody.split('\n');
   var row = new Object();
@@ -72,8 +74,9 @@ mktneutral.GetYahooDividends.prototype.pushRows = function(ticker,respBody) {
  * @param ticker  The ticker symbol for which to request the Yahoo historical data.
  * @param callback  The callback function to call when finished at the end of this function.
  * 
+ * @author Jerry Vigil
  */
-mktneutral.GetYahooDividends.prototype.getYahooHistory = function(ticker,callback) {
+mktneutral.dividends.GetYahooDividends.prototype.getYahooHistory = function(ticker,callback) {
  var self = this;
  var prefix = 'http://ichart.finance.yahoo.com/table.csv?s=';
  var suffix = '&a='+this.today.getMonth()+'&b='+this.today.getDate()+'&c='+(this.today.getFullYear()-this.HISTORICAL_YEARS) +
@@ -103,11 +106,12 @@ mktneutral.GetYahooDividends.prototype.getYahooHistory = function(ticker,callbac
  * @param ticker  The ticker symbol for which to request the Yahoo last quote data.
  * @param callback  The callback function to call when finished at the end of this function.
  * 
+ * @author Jerry Vigil
  */
-mktneutral.GetYahooDividends.prototype.getYahooLast = function(ticker,callback){
+mktneutral.dividends.GetYahooDividends.prototype.getYahooLast = function(ticker,callback){
 	var prefix = 'http://download.finance.yahoo.com/d/quotes.csv?s=';
 	var suffix = '&f=sl1'
-	console.log( "Ticker = " + ticker );
+	console.log( 'Ticker = ' + ticker );
 	
 	xhr.onreadystatechange = function(){
 		if ( xhr.readyState==4 ){
@@ -134,8 +138,9 @@ mktneutral.GetYahooDividends.prototype.getYahooLast = function(ticker,callback){
  * @param outputJSONRecordsFile  Output file to write the dividend yield records to in JSON format.
  * @param cb  The callback function to call when finished at the end of this function.
  * 
+ * @author Jerry Vigil
  */
-mktneutral.GetYahooDividends.prototype.getYahoos = function(ticker,outputJSONRecordsFile,cb){ 
+mktneutral.dividends.GetYahooDividends.prototype.getYahoos = function(ticker,outputJSONRecordsFile,cb){ 
 	var self = this;
 	async.parallel([function(callback){ 
 						var results = self.getYahooHistory(ticker,callback);
@@ -169,30 +174,31 @@ mktneutral.GetYahooDividends.prototype.getYahoos = function(ticker,outputJSONRec
  * @param jsonTickerListFile  Input file containing a list of ticker symbols in JSON format.
  * @param outputJSONRecordsFile  Output file to write the dividend yield records to in JSON format.
  * 
+ * @author Jerry Vigil
  */
-mktneutral.GetYahooDividends.prototype.main = function(jsonTickerListFile,outputJSONRecordsFile) {
+mktneutral.dividends.GetYahooDividends.prototype.main = function(jsonTickerListFile,outputJSONRecordsFile) {
 	var self = this;
 	fs.unlink(outputJSONRecordsFile,function(){
 	 fs.appendFile(outputJSONRecordsFile,'{"records":[','utf8',function(){
 	 	fs.readFile(jsonTickerListFile,'utf8',function(err,data){
 		   	var tickerList = JSON.parse(data);
 		
-			var SLEEP_BETWEEN_REQUESTS = 1000;
+			var SLEEP_BETWEEN_REQUESTS = 500;
 			var i=0;
 			function doCall(callback){
 				console.log('DOING TICKER = '+tickerList.tickers[i]);
-				//self.getYahoos(tickerList.tickers[i],outputJSONRecordsFile,function(){
-			        self.getYahooMainPage(tickerList.tickers[i],outputJSONRecordsFile,function(){
-					i++;
-					if (i<tickerList.tickers.length) {
-				    	setTimeout(function(){
-                                        doCall(callback);
-                                    },SLEEP_BETWEEN_REQUESTS);
-					}
-			    	else {
-			    		setTimeout(callback,SLEEP_BETWEEN_REQUESTS);  
-                	}
-				});
+				     self.getYahoos(tickerList.tickers[i],outputJSONRecordsFile,function(){
+				     //self.getYahooMainPage(tickerList.tickers[i],outputJSONRecordsFile,function(){
+				    	 i++;
+				    	 if (i<tickerList.tickers.length) {
+				    		 setTimeout(function(){
+				    			 doCall(callback);
+                             	}, SLEEP_BETWEEN_REQUESTS );
+				    	 }
+				    	 else {
+				    		 setTimeout(callback,SLEEP_BETWEEN_REQUESTS);  
+				    	 }
+				     });
 		}
 		
 		doCall(function(){
@@ -212,8 +218,9 @@ mktneutral.GetYahooDividends.prototype.main = function(jsonTickerListFile,output
  * @param jsonDividendYieldRecords  Input file containing a list of dividend yield records.
  * @param jsonSortedRecords  Output file to write the sorted list of dividend yield records.
  * 
+ * @author Jerry Vigil
  */
-mktneutral.GetYahooDividends.prototype.sortRecords = function(jsonDividendYieldRecords,jsonSortedRecords) {
+mktneutral.dividends.GetYahooDividends.prototype.sortRecords = function(jsonDividendYieldRecords,jsonSortedRecords) {
 	fs.readFile(jsonDividendYieldRecords,'utf8',function(err,data){
 		var yieldRecords = JSON.parse(data);
 		async.sortBy(yieldRecords.records,function(item,callback){
@@ -231,8 +238,9 @@ mktneutral.GetYahooDividends.prototype.sortRecords = function(jsonDividendYieldR
  * 
  * @param  jsonSortedRecords  Input file containing the dividend records in JSON format.
  * 
+ * @author Jerry Vigil
  */
-mktneutral.GetYahooDividends.prototype.printSortedRecords = function(jsonSortedRecords) {
+mktneutral.dividends.GetYahooDividends.prototype.printSortedRecords = function(jsonSortedRecords) {
 	fs.readFile(jsonSortedRecords,'utf8',function(err,data){
 		var records = JSON.parse(data);
 		async.each(records,function(rec){
@@ -249,11 +257,12 @@ mktneutral.GetYahooDividends.prototype.printSortedRecords = function(jsonSortedR
  * Method to get the Yahoo! profile page data for a ticker symbol.
  * Refer to examples at http://finance.yahoo.com/q/pr?s=AAPL+Profile
  *
+ * @author Jerry Vigil
  */
-mktneutral.GetYahooDividends.prototype.getYahooProfile = function(ticker,jsonRecordsFile,callback) {
+mktneutral.dividends.GetYahooDividends.prototype.getYahooProfile = function(ticker,jsonRecordsFile,callback) {
     var prefix = 'http://finance.yahoo.com/q/pr?s=';
     var suffix = '+Profile'
-    console.log( "Ticker = " + ticker );
+    console.log( 'Ticker = ' + ticker );
 
     var xhr = new XMLHttpRequest();
     xhr.onreadystatechange = function(){
@@ -293,10 +302,11 @@ mktneutral.GetYahooDividends.prototype.getYahooProfile = function(ticker,jsonRec
  * Method to get the Yahoo! main page data for a ticker symbol.
  * Refer to examples at http://m.yahoo.com/w/legobpengine/finance/details/?.sy=aapl
  *
+ *	@author Jerry Vigil
  */
-mktneutral.GetYahooDividends.prototype.getYahooMainPage = function(ticker,jsonRecordsFile,callback) {
+mktneutral.dividends.GetYahooDividends.prototype.getYahooMainPage = function(ticker,jsonRecordsFile,callback) {
     var prefix = 'http://m.yahoo.com/w/legobpengine/finance/details/?.sy=';
-    console.log( "Ticker = " + ticker );
+    console.log( 'Ticker = ' + ticker );
 
     var xhr = new XMLHttpRequest();
     xhr.onreadystatechange = function(){
@@ -359,30 +369,32 @@ mktneutral.GetYahooDividends.prototype.getYahooMainPage = function(ticker,jsonRe
 /**
  * Method to insert the Yahoo profiles data into the sqlite database.
  *
+ * @author Jerry Vigil
  */
-mktneutral.GetYahooDividends.prototype.insertYahooProfiles = function() {
+mktneutral.dividends.GetYahooDividends.prototype.insertYahooProfiles = function() {
     var db = new sqlite3.Database('YahooDividends.db',function(){
         db.run('DROP TABLE IF EXISTS yahoo_profiles',function(){
-	 db.run('CREATE TABLE IF NOT EXISTS yahoo_profiles ( ticker TEXT, index_membership TEXT, sector TEXT, industry TEXT, fte TEXT )',function(){
-           fs.readFile('./YahooProfileRecords.json','utf8',function(err,data){
-	       var profileRecords = JSON.parse(data);
-               console.log( 'RECORDS COUNT = ' + profileRecords.records.length );
-               async.each(profileRecords.records,function(rec){
-		   db.run('INSERT INTO yahoo_profiles VALUES ( "' + rec.ticker + '", "' + rec.indexMembership + '", "' + rec.sector + '", "' + rec.industry + '", "' + rec.fte + '" )',function(){});
-               },function(){
-		   db.close();
-               });
-           });
-         });
-      });
-    });
+        	db.run('CREATE TABLE IF NOT EXISTS yahoo_profiles ( ticker TEXT, index_membership TEXT, sector TEXT, industry TEXT, fte TEXT )',function(){
+        		fs.readFile('./YahooProfileRecords.json','utf8',function(err,data){
+        			var profileRecords = JSON.parse(data);
+        			console.log( 'RECORDS COUNT = ' + profileRecords.records.length );
+        			async.each(profileRecords.records,function(rec){
+        				db.run('INSERT INTO yahoo_profiles VALUES ( "' + rec.ticker + '", "' + rec.indexMembership + '", "' + rec.sector + '", "' + rec.industry + '", "' + rec.fte + '" )',function(){});
+        			},function(){
+        				db.close();
+        			});
+        			});
+        		});
+        	});
+    	});
 };
 
 /**
  * Method to insert the Yahoo main page data into the sqlite database.
  *
+ * @author Jerry Vigil
  */
-mktneutral.GetYahooDividends.prototype.insertYahooMainPages = function() {
+mktneutral.dividends.GetYahooDividends.prototype.insertYahooMainPages = function() {
     var db = new sqlite3.Database('YahooDividends.db',function(){
       db.run('DROP TABLE IF EXISTS yahoo_main_pages',function(){
 	  db.run('CREATE TABLE IF NOT EXISTS yahoo_main_pages ( ticker TEXT, name TEXT, market_cap TEXT, pe_ratio TEXT, eps TEXT )',function(){
@@ -402,8 +414,9 @@ mktneutral.GetYahooDividends.prototype.insertYahooMainPages = function() {
 /**
  * Method to insert the sorted dividend yield records.
  *
+ * @author Jerry Vigil
  */
-mktneutral.GetYahooDividends.prototype.insertSortedYieldRecords = function() {
+mktneutral.dividends.GetYahooDividends.prototype.insertSortedYieldRecords = function() {
     var db = new sqlite3.Database('YahooDividends.db',function(){
     	db.run('DROP TABLE IF EXISTS sorted_yield_records',function(){
             db.run('CREATE TABLE sorted_yield_records ( ticker TEXT, ttmd REAL, last REAL, yield REAL )',function(){
@@ -422,9 +435,11 @@ mktneutral.GetYahooDividends.prototype.insertSortedYieldRecords = function() {
 };
 
 //Main execution code goes here to instantiate the object and run.
-var getYahooDividends = new mktneutral.GetYahooDividends();
+var getYahooDividends = new mktneutral.dividends.GetYahooDividends();
+getYahooDividends.main('./tickerList.json','./dividendYieldRecords.json');
+
 //getYahooDividends.main('./tickerList.json','./YahooMainPageRecords.json');
-getYahooDividends.insertYahooProfiles();
+//getYahooDividends.insertYahooProfiles();
 //getYahooDividends.insertSortedYieldRecords();
 
 //getYahooDividends.sortRecords('./dividendYieldRecords.json','./sortedYieldRecords.json');
