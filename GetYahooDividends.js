@@ -424,7 +424,6 @@ mktneutral.dividends.GetYahooDividends.prototype.insertSortedYieldRecords = func
                   var sortedYieldRecords = JSON.parse(data);
                   async.each(sortedYieldRecords.records,function(rec){
 	              db.run('INSERT INTO sorted_yield_records VALUES ( "' + rec.ticker + '", "' + rec.ttmd + '", "' + rec.last + '", "' + rec.yield + '" )',function(){});
-                    // console.log( rec.ticker );
                   },function(){
 	               db.close();
                   });
@@ -436,11 +435,11 @@ mktneutral.dividends.GetYahooDividends.prototype.insertSortedYieldRecords = func
 
 //Main execution code goes here to instantiate the object and run.
 var getYahooDividends = new mktneutral.dividends.GetYahooDividends();
-getYahooDividends.main('./tickerList.json','./dividendYieldRecords.json');
+//getYahooDividends.main('./tickerList.json','./dividendYieldRecords.json');
 
 //getYahooDividends.main('./tickerList.json','./YahooMainPageRecords.json');
 //getYahooDividends.insertYahooProfiles();
-//getYahooDividends.insertSortedYieldRecords();
+getYahooDividends.insertSortedYieldRecords();
 
 //getYahooDividends.sortRecords('./dividendYieldRecords.json','./sortedYieldRecords.json');
 //getYahooDividends.printSortedRecords('./sortedYieldRecords.json');
