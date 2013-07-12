@@ -8,7 +8,7 @@
  *
  */
 
-//Requires will go here.
+//Requires here.
 var async = require('async');
 var XMLHttpRequest = require('xmlhttprequest').XMLHttpRequest;
 var fs = require('fs');
