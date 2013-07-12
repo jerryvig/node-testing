@@ -10,13 +10,9 @@
 
 //Requires here.
 var async = require('async');
-var XMLHttpRequest = require('xmlhttprequest').XMLHttpRequest;
 var fs = require('fs');
 var sqlite3 = require('sqlite3').verbose();
 var $ = require('jquery');
-
-//XMLHttpRequest objects
-var xhr = new XMLHttpRequest();
 
 //Namespace declarations.
 var mktneutral = mktneutral || {};
@@ -34,6 +30,7 @@ mktneutral.dividends.GetYahooDividends = function() {
 	 *   Number of years of dividend history to collect from yahoo.
 	 */
 	this.HISTORICAL_YEARS = 5;
+	this.SLEEP_BETWEEN_REQUESTS = 500;
 	
 	this.today = new Date();
 	this.oneYearAgo = new Date();
@@ -169,20 +166,20 @@ mktneutral.dividends.GetYahooDividends.prototype.main = function(jsonTickerListF
 	 	fs.readFile(jsonTickerListFile,'utf8',function(err,data){
 		   	var tickerList = JSON.parse(data);
 		
-			var SLEEP_BETWEEN_REQUESTS = 500;
 			var i=0;
 			function doCall(callback){
 				console.log('DOING TICKER = '+tickerList.tickers[i]);
-				     self.getYahoos(tickerList.tickers[i],outputJSONRecordsFile,function(){
-				     //self.getYahooMainPage(tickerList.tickers[i],outputJSONRecordsFile,function(){
+				    // self.getYahoos(tickerList.tickers[i],outputJSONRecordsFile,function(){
+				    // self.getYahooMainPage(tickerList.tickers[i],outputJSONRecordsFile,function(){
+				   self.getYahooProfile(tickerList.tickers[i],outputJSONRecordsFile,function(){
 				    	 i++;
 				    	 if (i<tickerList.tickers.length) {
 				    		 setTimeout(function(){
 				    			 doCall(callback);
-                             	}, SLEEP_BETWEEN_REQUESTS );
+                             	}, self.SLEEP_BETWEEN_REQUESTS );
 				    	 }
 				    	 else {
-				    		 setTimeout(callback,SLEEP_BETWEEN_REQUESTS);  
+				    		 setTimeout(callback,self.SLEEP_BETWEEN_REQUESTS);  
 				    	 }
 				     });
 		}
@@ -249,39 +246,31 @@ mktneutral.dividends.GetYahooDividends.prototype.getYahooProfile = function(tick
     var prefix = 'http://finance.yahoo.com/q/pr?s=';
     var suffix = '+Profile'
     console.log( 'Ticker = ' + ticker );
+    
+    //Use jQuery to do the requests here.
+    $.get(prefix+ticker+suffix, function(data){
+    				responseText = data.replace(/<(?:.|\n)*?>/gm, '');
 
-    var xhr = new XMLHttpRequest();
-    xhr.onreadystatechange = function(){
-	if ( xhr.readyState==4 ){
-	    if ( xhr.status==200 ){
-		responseText = xhr.responseText.replace(/<(?:.|\n)*?>/gm, '');
+    				var membershipIdx = responseText.indexOf('Index Membership:');
+    				var sectorIdx = responseText.indexOf('Sector:');
+    				var industryIdx = responseText.indexOf('Industry:');
+    				var fteIdx = responseText.indexOf('Full Time Employees:');
+    				var businessSummaryIdx = responseText.indexOf('Business Summary'); 
 
-		var membershipIdx = responseText.indexOf('Index Membership:');
-		var sectorIdx = responseText.indexOf('Sector:');
-                var industryIdx = responseText.indexOf('Industry:');
-                var fteIdx = responseText.indexOf('Full Time Employees:');
-		var businessSummaryIdx = responseText.indexOf('Business Summary'); 
+    				var record = new Object();
+    				record.ticker = ticker;
+    				record.indexMembership = (responseText.substr(membershipIdx,(sectorIdx-membershipIdx))).split(':')[1];
+    				record.sector = (responseText.substr(sectorIdx,(industryIdx-sectorIdx))).split(':')[1];
+    				record.industry = (responseText.substr(industryIdx,(fteIdx-industryIdx))).split(':')[1];
+    				record.fte = (responseText.substr(fteIdx,(businessSummaryIdx-fteIdx))).split(':')[1];
 
-		var record = new Object();
-                record.ticker = ticker;
-		record.indexMembership = (responseText.substr(membershipIdx,(sectorIdx-membershipIdx))).split(':')[1];
-	        record.sector = (responseText.substr(sectorIdx,(industryIdx-sectorIdx))).split(':')[1];
-                record.industry = (responseText.substr(industryIdx,(fteIdx-industryIdx))).split(':')[1];
-	        record.fte = (responseText.substr(fteIdx,(businessSummaryIdx-fteIdx))).split(':')[1];
-                  
-                console.log( JSON.stringify(record) );
+    				console.log( JSON.stringify(record) );
 
-                fs.appendFile(jsonRecordsFile,JSON.stringify(record),callback);
-	    }
-	    else {
-		console.log('Error processing ticker'+ticker);
-		callback();
-	   }
-	 }
-    };
-
-    xhr.open('GET',prefix+ticker+suffix,true);
-    xhr.send();	
+    				fs.appendFile(jsonRecordsFile,JSON.stringify(record),callback);
+    			}, 'text').fail(function(){
+    				console.log('Error processing ticker'+ticker);
+        			callback();
+    			});
 };
 
 /**
@@ -294,62 +283,54 @@ mktneutral.dividends.GetYahooDividends.prototype.getYahooMainPage = function(tic
     var prefix = 'http://m.yahoo.com/w/legobpengine/finance/details/?.sy=';
     console.log( 'Ticker = ' + ticker );
 
-    var xhr = new XMLHttpRequest();
-    xhr.onreadystatechange = function(){
-	if ( xhr.readyState==4 ){
-	    if ( xhr.status==200 ){
-		var responseText = xhr.responseText.replace(/<(?:.|\n)*?>/gm, '');
+    //Make the request with jQuery
+    $.get(prefix+ticker, function(data){
+	    		var responseText = data.replace(/<(?:.|\n)*?>/gm, '');
 
-		var marketsClosedIdx = responseText.indexOf('Markets closed');
-                var marketCapIdx = responseText.indexOf('Market Cap:');
-                var peIdx = responseText.indexOf('P/E (ttm):');
-                var epsIdx = responseText.indexOf('EPS (ttm):');
-		var oneDayIdx = responseText.indexOf('1 Day');
+	    		var marketsClosedIdx = responseText.indexOf('Markets closed');
+	    		var marketCapIdx = responseText.indexOf('Market Cap:');
+	    		var peIdx = responseText.indexOf('P/E (ttm):');
+	    		var epsIdx = responseText.indexOf('EPS (ttm):');
+	    		var oneDayIdx = responseText.indexOf('1 Day');
 
-		var tickerAndName = '';
-                if ( marketsClosedIdx > 0 ) {
-                    tickerAndName = responseText.substr(marketsClosedIdx+14,50);
-		    tickerAndName = tickerAndName.substr(0,tickerAndName.indexOf('('));
-		    tickerAndName = tickerAndName.replace(ticker,'');
-                }
+	    		var tickerAndName = '';
+	    		if ( marketsClosedIdx > 0 ) {
+	    			tickerAndName = responseText.substr(marketsClosedIdx+14,50);
+	    			tickerAndName = tickerAndName.substr(0,tickerAndName.indexOf('('));
+	    			tickerAndName = tickerAndName.replace(ticker,'');
+	    		}
 
-		var marketCap = '';
-                if ( marketCapIdx > 0 && peIdx > 0 ) {
-                    marketCap = responseText.substr(marketCapIdx+11,(peIdx-(marketCapIdx+11)));
-		    marketCap = marketCap.trim().replace('(','').replace(')','');
-                }
+	    		var marketCap = '';
+	    		if ( marketCapIdx > 0 && peIdx > 0 ) {
+	    			marketCap = responseText.substr(marketCapIdx+11,(peIdx-(marketCapIdx+11)));
+	    			marketCap = marketCap.trim().replace('(','').replace(')','');
+	    		}
 
-		var peRatio = '';
-                if ( peIdx > 0 && epsIdx > 0 ) {
-                    responseText.substr(peIdx+11,(epsIdx-(peIdx+11)));
-		    peRatio = peRatio.trim().replace('(','').replace(')','');
-                }           
+	    		var peRatio = '';
+	    		if ( peIdx > 0 && epsIdx > 0 ) {
+	    			responseText.substr(peIdx+11,(epsIdx-(peIdx+11)));
+	    			peRatio = peRatio.trim().replace('(','').replace(')','');
+	    		}           
 
-                var eps = '';
-                if ( epsIdx > 0 && oneDayIdx > 0 ) {
-		    eps = responseText.substr(epsIdx+11,(oneDayIdx-epsIdx-11));
-                    eps = eps.trim().replace(')','').replace('(','');
-                }
+	    		var eps = '';
+	    		if ( epsIdx > 0 && oneDayIdx > 0 ) {
+	    			eps = responseText.substr(epsIdx+11,(oneDayIdx-epsIdx-11));
+	    			eps = eps.trim().replace(')','').replace('(','');
+	    		}
 
-		var record = new Object();
-		record.ticker = ticker;
-		record.name = tickerAndName;
-		record.marketCap = marketCap;
-		record.peRatio = peRatio;
-		record.eps = eps;
+	    		var record = new Object();
+	    		record.ticker = ticker;
+	    		record.name = tickerAndName;
+	    		record.marketCap = marketCap;
+	    		record.peRatio = peRatio;
+	    		record.eps = eps;
 
-		console.log( JSON.stringify(record) );
-		fs.appendFile(jsonRecordsFile,JSON.stringify(record),callback);
-	    }
-	    else {
-		console.log('Error processing ticker'+ticker);
-		callback();
-	   }
-	 }
-    };
-
-    xhr.open('GET',prefix+ticker,true);
-    xhr.send();
+	    		console.log( JSON.stringify(record) );
+	    		fs.appendFile(jsonRecordsFile,JSON.stringify(record),callback);
+	    	}, 'text').fail(function(){
+	    		console.log('Error processing ticker'+ticker);
+	    		callback();
+	    	});
 };
 
 /**
@@ -421,9 +402,9 @@ mktneutral.dividends.GetYahooDividends.prototype.insertSortedYieldRecords = func
 
 //Main execution code goes here to instantiate the object and run.
 var getYahooDividends = new mktneutral.dividends.GetYahooDividends();
-getYahooDividends.main('./tickerList.json','./dividendYieldRecords.json');
+//getYahooDividends.main('./tickerList.json','./dividendYieldRecords.json');
 
-//getYahooDividends.main('./tickerList.json','./YahooMainPageRecords.json');
+getYahooDividends.main('./tickerList.json','./YahooMainPageRecords.json');
 //getYahooDividends.insertYahooProfiles();
 //getYahooDividends.insertSortedYieldRecords();
 
