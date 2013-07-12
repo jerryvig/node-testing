@@ -13,10 +13,10 @@ var async = require('async');
 var XMLHttpRequest = require('xmlhttprequest').XMLHttpRequest;
 var fs = require('fs');
 var sqlite3 = require('sqlite3').verbose();
+var $ = require('jquery');
 
 //XMLHttpRequest objects
 var xhr = new XMLHttpRequest();
-var xhrII = new XMLHttpRequest();
 
 //Namespace declarations.
 var mktneutral = mktneutral || {};
@@ -83,21 +83,14 @@ mktneutral.dividends.GetYahooDividends.prototype.getYahooHistory = function(tick
   				'&d='+this.today.getMonth()+'&e='+this.today.getDate()+'&f='+this.today.getFullYear()+
   				'&g=v&ignore=.csv';
  
- xhrII.onreadystatechange = function(){
-	 if (xhrII.readyState==4){
-		 if (xhrII.status==200){
-			 var row = self.pushRows(ticker,xhrII.responseText.toString());
-			 callback(null,row);
-		 }
-		 else {
-			 console.log('Error processing ticker'+ticker);
-			 callback(null,null);
-		 }
-	 }
- };
- 
- xhrII.open('GET',prefix+ticker+suffix,true);
- xhrII.send();	
+ //Use jQuery to make the request.
+ $.get(prefix+ticker+suffix, function(data){
+	 var row = self.pushRows(ticker,data);
+	 callback(null,row);
+ },'text').fail(function(){
+	  console.log('Error retrieving data for ticker = '+ticker);
+	  callback(null,null);
+ });
 };
 
 /**
@@ -113,21 +106,14 @@ mktneutral.dividends.GetYahooDividends.prototype.getYahooLast = function(ticker,
 	var suffix = '&f=sl1'
 	console.log( 'Ticker = ' + ticker );
 	
-	xhr.onreadystatechange = function(){
-		if ( xhr.readyState==4 ){
-			if ( xhr.status==200 ){
-				var cols = xhr.responseText.split(',');
-				callback(null,cols[1].trim());
-			}
-			else {
-				console.log('Error processing ticker'+ticker);
-				callback(null,0.0);
-			}
-		}
-	};
-	
-	xhr.open('GET',prefix+ticker+suffix,true);
-	xhr.send();	
+	//Use jQuery to make the request.
+	$.get(prefix+ticker+suffix, function(data){
+		var cols = data.split(',');
+		callback(null, cols[1].trim());
+	}, 'text').fail(function(){
+		console.log('Error retrieving data for '+ticker);
+		callback(null,0.0);
+	});
 };
 
 /**
@@ -435,11 +421,11 @@ mktneutral.dividends.GetYahooDividends.prototype.insertSortedYieldRecords = func
 
 //Main execution code goes here to instantiate the object and run.
 var getYahooDividends = new mktneutral.dividends.GetYahooDividends();
-//getYahooDividends.main('./tickerList.json','./dividendYieldRecords.json');
+getYahooDividends.main('./tickerList.json','./dividendYieldRecords.json');
 
 //getYahooDividends.main('./tickerList.json','./YahooMainPageRecords.json');
 //getYahooDividends.insertYahooProfiles();
-getYahooDividends.insertSortedYieldRecords();
+//getYahooDividends.insertSortedYieldRecords();
 
 //getYahooDividends.sortRecords('./dividendYieldRecords.json','./sortedYieldRecords.json');
 //getYahooDividends.printSortedRecords('./sortedYieldRecords.json');
